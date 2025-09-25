@@ -1,29 +1,40 @@
-import { readFile, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
+
+import { checkCommand } from './commands/check'
+import { optimiseCommand } from './commands/optimise'
 import { parseYarnLockContent } from './yarn/parse'
 
-console.log('Hello from depdedupe CLI!')
+const commands = {
+  check: checkCommand,
+  optimise: optimiseCommand,
+}
 
-const pathToYarnLock = process.argv[2]
-if (!pathToYarnLock) {
-  console.error('Usage: depdedupe <path-to-yarn-lock>')
+const commandName = process.argv[2]
+if (!commandName || !(commandName in commands)) {
+  console.error('Usage: depdedupe <command> <path-to-yarn-lock>')
+  console.error(`Available commands: ${Object.keys(commands).join(', ')}`)
+  process.exit(1)
+}
+const command = commands[commandName as keyof typeof commands]
+
+const yarnLockPath = process.argv[3]
+if (!yarnLockPath) {
+  console.error(`Usage: depdedupe ${commandName} <path-to-yarn-lock>`)
   process.exit(1)
 }
 
-const content = readFileSync(pathToYarnLock, 'utf-8')
-const optimized = parseYarnLockContent(content, { optimise: true })
+const yarnLockContent = readFileSync(yarnLockPath, 'utf-8')
+const parsed = parseYarnLockContent(yarnLockContent, { optimise: true })
 
-let dependenciesCount = 0
-let optimizedCount = 0
-
-for (const [name, info] of Object.entries(optimized.dependencies)) {
-  dependenciesCount += Object.keys(info.versions).length
-  optimizedCount += Object.keys(info.optimisedVersions || {}).length
-}
-
-if (dependenciesCount === optimizedCount) {
-  console.log('No optimization possible')
-  process.exit(0)
-} else {
-  console.log(`Can be optimized from ${dependenciesCount} to ${optimizedCount} dependencies`)
-  process.exit(1)
-}
+command({
+  yarnLockPath,
+  yarnLockContent,
+  parsed,
+})
+  .then(() => {
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })

@@ -1,5 +1,5 @@
-import { describe, it } from 'node:test'
 import assert from 'node:assert'
+import { it } from 'node:test'
 
 import { parseYarnLockContent } from './parse'
 
