@@ -12,13 +12,16 @@
   },
   "scripts": {
     "dev": "tsx ./src/cli.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "check-types": "tsc --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write",
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "semver": "^7.7.2",
+    "tsup": "^8.5.0",
     "typescript": "^5.9"
   },
   "devDependencies": {
