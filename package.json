@@ -1,0 +1,14 @@
+{
+  "name": "depdedupe",
+  "license": "MIT",
+  "version": "0.1.0",
+  "author": {
+    "name": "Marc Qualie",
+    "email": "marc@marcqualie.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcqualie/depdedupe"
+  },
+  "packageManager": "pnpm@10.17.0"
+}
