@@ -9,21 +9,43 @@ const commands = {
   optimise: optimiseCommand,
 }
 
-const commandName = process.argv[2]
-if (!commandName || !(commandName in commands)) {
-  console.error('Usage: depdedupe <command> <path-to-yarn-lock>')
-  console.error(`Available commands: ${Object.keys(commands).join(', ')}`)
-  process.exit(1)
+// Parse arguments: can be either depdedupe <command> [path] or depdedupe [path]
+const firstArg = process.argv[2]
+const secondArg = process.argv[3]
+
+let commandName: string
+let yarnLockPath: string
+
+if (firstArg && firstArg in commands) {
+  // Format: depdedupe <command> [path]
+  commandName = firstArg
+  yarnLockPath = secondArg || './yarn.lock'
+} else if (firstArg) {
+  // Format: depdedupe [path] - default to check command
+  commandName = 'check'
+  yarnLockPath = firstArg
+} else {
+  // Format: depdedupe - default command and path
+  commandName = 'check'
+  yarnLockPath = './yarn.lock'
 }
+
 const command = commands[commandName as keyof typeof commands]
 
-const yarnLockPath = process.argv[3]
-if (!yarnLockPath) {
-  console.error(`Usage: depdedupe ${commandName} <path-to-yarn-lock>`)
-  process.exit(1)
+let yarnLockContent: string
+try {
+  yarnLockContent = readFileSync(yarnLockPath, 'utf-8')
+} catch (error) {
+  if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    console.error(`Error: yarn.lock file not found at path: ${yarnLockPath}`)
+    console.error('Please check the path and try again.')
+    process.exit(1)
+  } else {
+    console.error(`Error reading yarn.lock file: ${error}`)
+    process.exit(1)
+  }
 }
 
-const yarnLockContent = readFileSync(yarnLockPath, 'utf-8')
 const parsed = parseYarnLockContent(yarnLockContent, { optimise: true })
 
 command({
