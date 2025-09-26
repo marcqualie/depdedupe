@@ -20,15 +20,15 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "semver": "^7.7.2",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9"
+    "semver": "^7.7.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
     "@types/node": "^22.18",
     "@types/semver": "^7.7.1",
-    "tsx": "^4.20.5"
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9"
   },
   "bin": {
     "depdedupe": "dist/cli.js"
