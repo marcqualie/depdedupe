@@ -4,8 +4,9 @@ import { existsSync, readFileSync } from 'node:fs'
 
 import { checkCommand } from './commands/check'
 import { optimiseCommand } from './commands/optimise'
-import { parseYarnLockContent } from './yarn/parse'
 import { parsePnpmLockContent } from './pnpm/parse'
+import { parseYarnLockContent } from './yarn/parse'
+
 import type { LockfileType } from './types/command'
 
 const commands = {

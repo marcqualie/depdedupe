@@ -69,10 +69,7 @@ export const prepareRemovals = (
               if (newVersion && newVersion !== extractedVersion) {
                 // Store the update: key is current version, value is new version
                 versionUpdates[currentVersion] = currentVersion.includes('(')
-                  ? currentVersion.replace(
-                      /^[^(]+/,
-                      newVersion,
-                    )
+                  ? currentVersion.replace(/^[^(]+/, newVersion)
                   : newVersion
               }
             }
@@ -108,34 +105,6 @@ export const prepareRemovals = (
   }
 
   return result
-}
-
-/**
- * Parse a pnpm package key into name and version
- * Examples:
- * - "semver@7.7.3" -> { name: "semver", version: "7.7.3" }
- * - "@types/react@18.2.79" -> { name: "@types/react", version: "18.2.79" }
- * - "react@18.2.0(react-dom@18.2.0)" -> { name: "react", version: "18.2.0" }
- */
-const parsePackageKey = (
-  packageKey: string,
-): { name: string | null; version: string | null } => {
-  // Handle scoped packages
-  if (packageKey.startsWith('@')) {
-    // Match @scope/package@version or @scope/package@version(...)
-    const match = packageKey.match(/^(@[^/]+\/[^@]+)@([^(]+)/)
-    if (match) {
-      return { name: match[1], version: match[2] }
-    }
-  } else {
-    // Match package@version or package@version(...)
-    const match = packageKey.match(/^([^@]+)@([^(]+)/)
-    if (match) {
-      return { name: match[1], version: match[2] }
-    }
-  }
-
-  return { name: null, version: null }
 }
 
 /**

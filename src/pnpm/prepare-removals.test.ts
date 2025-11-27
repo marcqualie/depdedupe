@@ -57,7 +57,7 @@ snapshots:
     }
 
     const newSource = prepareRemovals(pnpmLockSource, removals)
-    const parsed = parseYAML(newSource) as any
+    const parsed = parseYAML(newSource)
 
     // Check that react@18.2.0 was removed from packages
     assert.equal(parsed.packages['react@18.2.0'], undefined)
@@ -110,7 +110,7 @@ snapshots:
     }
 
     const newSource = prepareRemovals(pnpmLockSource, removals)
-    const parsed = parseYAML(newSource) as any
+    const parsed = parseYAML(newSource)
 
     // Check that both versions were removed
     assert.equal(parsed.packages['react@18.2.0'], undefined)
@@ -150,7 +150,7 @@ snapshots:
     }
 
     const newSource = prepareRemovals(pnpmLockSource, removals)
-    const parsed = parseYAML(newSource) as any
+    const parsed = parseYAML(newSource)
 
     // Check that old version was removed
     assert.equal(parsed.packages['@types/react@18.2.70'], undefined)
@@ -194,7 +194,7 @@ snapshots:
     }
 
     const newSource = prepareRemovals(pnpmLockSource, removals)
-    const parsed = parseYAML(newSource) as any
+    const parsed = parseYAML(newSource)
 
     // Check that 7.7.2 was removed
     assert.equal(parsed.packages['semver@7.7.2'], undefined)
@@ -279,7 +279,7 @@ snapshots:
       removals,
       optimisedVersions,
     )
-    const parsed = parseYAML(newSource) as any
+    const parsed = parseYAML(newSource)
 
     // Check that 7.7.2 was removed
     assert.equal(parsed.packages['semver@7.7.2'], undefined)

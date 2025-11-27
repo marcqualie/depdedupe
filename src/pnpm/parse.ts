@@ -1,4 +1,5 @@
 import { parse as parseYAML } from 'yaml'
+
 import { optimiseVersions } from '../yarn/optimise'
 
 /** Resolved version - 1.2.3 */

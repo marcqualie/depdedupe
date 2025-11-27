@@ -15,7 +15,8 @@ export const checkCommand = async (options: CommandOptions) => {
     console.log('No optimization possible')
     process.exit(0)
   } else {
-    const lockfileTypeName = lockfileType === 'pnpm' ? 'pnpm-lock.yaml' : 'yarn.lock'
+    const lockfileTypeName =
+      lockfileType === 'pnpm' ? 'pnpm-lock.yaml' : 'yarn.lock'
     console.log(
       `Can be optimized from ${dependenciesCount} to ${optimizedCount} dependencies (${lockfileTypeName})`,
     )

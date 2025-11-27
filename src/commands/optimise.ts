@@ -2,8 +2,8 @@ import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import { prepareRemovals as yarnPrepareRemovals } from '../yarn/prepare-removals'
 import { prepareRemovals as pnpmPrepareRemovals } from '../pnpm/prepare-removals'
+import { prepareRemovals as yarnPrepareRemovals } from '../yarn/prepare-removals'
 
 import type { CommandOptions } from '../types/command'
 

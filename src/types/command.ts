@@ -1,5 +1,5 @@
-import type { ParsedYarnLock } from '../yarn'
 import type { ParsedPnpmLock } from '../pnpm'
+import type { ParsedYarnLock } from '../yarn'
 
 export type LockfileType = 'yarn' | 'pnpm'
 
