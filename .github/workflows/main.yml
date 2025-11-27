@@ -56,4 +56,4 @@ jobs:
 
       # TODO: Replace with depdedupe from npm once published
       - name: Run depdedupe
-        run: tsx ./src/cli.ts
+        run: pnpm exec tsx ./src/cli.ts
