@@ -1,7 +1,11 @@
 import type { ParsedYarnLock } from '../yarn'
+import type { ParsedPnpmLock } from '../pnpm'
+
+export type LockfileType = 'yarn' | 'pnpm'
 
 export type CommandOptions = {
-  yarnLockPath: string
-  yarnLockContent: string
-  parsed: ParsedYarnLock
+  lockfileType: LockfileType
+  lockfilePath: string
+  lockfileContent: string
+  parsed: ParsedYarnLock | ParsedPnpmLock
 }

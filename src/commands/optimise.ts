@@ -2,12 +2,13 @@ import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import { prepareRemovals } from '../yarn/prepare-removals'
+import { prepareRemovals as yarnPrepareRemovals } from '../yarn/prepare-removals'
+import { prepareRemovals as pnpmPrepareRemovals } from '../pnpm/prepare-removals'
 
 import type { CommandOptions } from '../types/command'
 
 export const optimiseCommand = async (options: CommandOptions) => {
-  const { yarnLockPath, yarnLockContent, parsed } = options
+  const { lockfilePath, lockfileContent, lockfileType, parsed } = options
 
   const removals: Record<string, string[]> = {}
   for (const [name, info] of Object.entries(parsed.dependencies)) {
@@ -26,23 +27,27 @@ export const optimiseCommand = async (options: CommandOptions) => {
 
   console.log(`Removing ${Object.values(removals).flat().length} dependencies`)
 
-  const newYarnLockContent = prepareRemovals(yarnLockContent, removals)
+  const newLockfileContent =
+    lockfileType === 'pnpm'
+      ? pnpmPrepareRemovals(lockfileContent, removals)
+      : yarnPrepareRemovals(lockfileContent, removals)
 
-  await writeFile(yarnLockPath, newYarnLockContent, 'utf-8')
+  await writeFile(lockfilePath, newLockfileContent, 'utf-8')
 
-  // run 'yarn install' in the base directory of the yarn.lock file
+  // run package manager install in the base directory of the lockfile
+  const packageManager = lockfileType === 'pnpm' ? 'pnpm' : 'yarn'
   await new Promise<void>((resolve, reject) => {
-    const yarnInstall = spawn('yarn', ['install'], {
-      cwd: dirname(yarnLockPath),
+    const install = spawn(packageManager, ['install'], {
+      cwd: dirname(lockfilePath),
       stdio: 'inherit',
       shell: true,
     })
 
-    yarnInstall.on('close', (code) => {
+    install.on('close', (code) => {
       if (code === 0) {
         resolve()
       } else {
-        reject(new Error(`yarn install failed with code ${code}`))
+        reject(new Error(`${packageManager} install failed with code ${code}`))
       }
     })
   })
