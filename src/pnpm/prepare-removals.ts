@@ -24,11 +24,12 @@ interface PnpmLockfile {
  * This involves:
  * 1. Removing entries from the packages section
  * 2. Removing entries from the snapshots section
- * Note: We don't update importers because yarn install/pnpm install will handle that
+ * 3. Updating importers to point to the optimised versions
  */
 export const prepareRemovals = (
   source: string,
   removals: Record<string, string[]>,
+  optimisedVersions?: Record<string, Record<string, string[]>>,
 ): string => {
   const lockfile = parseYAML(source) as PnpmLockfile
 
@@ -70,6 +71,52 @@ export const prepareRemovals = (
     lockfile.snapshots = newSnapshots
   }
 
+  // Update importers to point to optimised versions
+  if (lockfile.importers && optimisedVersions) {
+    for (const importer of Object.values(lockfile.importers)) {
+      const depTypes = [
+        importer.dependencies,
+        importer.devDependencies,
+        importer.optionalDependencies,
+      ]
+
+      for (const deps of depTypes) {
+        if (!deps) continue
+
+        for (const [packageName, depEntry] of Object.entries(deps)) {
+          const currentVersion = depEntry.version
+          const { specifier } = depEntry
+
+          // Skip workspace dependencies
+          if (currentVersion.startsWith('link:')) continue
+
+          // Extract version (handle peer deps like "18.2.0(react@18.2.0)")
+          const extractedVersion = extractResolvedVersion(currentVersion)
+
+          // Check if this version is being removed
+          if (removals[packageName]?.includes(extractedVersion)) {
+            // Find the optimised version for this specifier
+            const optimised = optimisedVersions[packageName]
+            if (optimised) {
+              const newVersion = findOptimisedVersion(specifier, optimised)
+              if (newVersion) {
+                // Preserve peer dependency notation if present
+                if (currentVersion.includes('(')) {
+                  const peerPart = currentVersion.match(/(\(.+\))$/)?.[1]
+                  depEntry.version = peerPart
+                    ? `${newVersion}${peerPart}`
+                    : newVersion
+                } else {
+                  depEntry.version = newVersion
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   return stringifyYAML(lockfile)
 }
 
@@ -99,4 +146,34 @@ const parsePackageKey = (
   }
 
   return { name: null, version: null }
+}
+
+/**
+ * Extract the resolved version from pnpm's version field
+ * Examples:
+ * - "7.7.3" -> "7.7.3"
+ * - "18.2.0(react@18.2.0)" -> "18.2.0"
+ * - "7.7.3(patch_hash)" -> "7.7.3"
+ */
+const extractResolvedVersion = (version: string): string => {
+  const match = version.match(/^([^(]+)/)
+  return match ? match[1] : version
+}
+
+/**
+ * Find the optimised version for a given specifier
+ * @param specifier The version specifier (e.g., "^7.7.2")
+ * @param optimised The optimised version map (e.g., { "7.7.3": ["^7.7.2", "^7.7.3"] })
+ * @returns The optimised version that contains this specifier
+ */
+const findOptimisedVersion = (
+  specifier: string,
+  optimised: Record<string, string[]>,
+): string | null => {
+  for (const [version, specifiers] of Object.entries(optimised)) {
+    if (specifiers.includes(specifier)) {
+      return version
+    }
+  }
+  return null
 }

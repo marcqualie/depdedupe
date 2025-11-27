@@ -11,12 +11,15 @@ export const optimiseCommand = async (options: CommandOptions) => {
   const { lockfilePath, lockfileContent, lockfileType, parsed } = options
 
   const removals: Record<string, string[]> = {}
+  const optimisedVersionsMap: Record<string, Record<string, string[]>> = {}
+
   for (const [name, info] of Object.entries(parsed.dependencies)) {
     const versions = Object.keys(info.versions)
     const optimisedVersions = Object.keys(info.optimisedVersions || {})
     if (versions.length !== optimisedVersions.length) {
       const toRemove = versions.filter((v) => !optimisedVersions.includes(v))
       removals[name] = toRemove
+      optimisedVersionsMap[name] = info.optimisedVersions || {}
     }
   }
 
@@ -29,7 +32,7 @@ export const optimiseCommand = async (options: CommandOptions) => {
 
   const newLockfileContent =
     lockfileType === 'pnpm'
-      ? pnpmPrepareRemovals(lockfileContent, removals)
+      ? pnpmPrepareRemovals(lockfileContent, removals, optimisedVersionsMap)
       : yarnPrepareRemovals(lockfileContent, removals)
 
   await writeFile(lockfilePath, newLockfileContent, 'utf-8')

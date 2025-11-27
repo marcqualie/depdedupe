@@ -204,4 +204,97 @@ snapshots:
     assert.equal(parsed.snapshots['semver@7.7.2'], undefined)
     assert.notEqual(parsed.snapshots['semver@7.7.3'], undefined)
   })
+
+  it('it handles typescript versions from real world example', () => {
+    const pnpmLockSource = `lockfileVersion: '9.0'
+
+importers:
+  .:
+    dependencies:
+      semver:
+        specifier: ^7.7.3
+        version: 7.7.3
+
+  packages/yarn:
+    dependencies:
+      semver:
+        specifier: ^7.7.2
+        version: 7.7.2
+      typescript:
+        specifier: ^5.9
+        version: 5.9.2
+
+packages:
+  semver@7.7.2:
+    resolution: {integrity: sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==}
+
+  semver@7.7.3:
+    resolution: {integrity: sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==}
+
+  typescript@5.9.2:
+    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+snapshots:
+  semver@7.7.2: {}
+
+  semver@7.7.3: {}
+
+  typescript@5.9.2: {}
+
+  typescript@5.9.3: {}
+`
+
+    const removals = {
+      semver: ['7.7.2'],
+      typescript: ['5.9.2'],
+    }
+
+    const optimisedVersions = {
+      semver: {
+        '7.7.3': ['^7.7.2', '^7.7.3'],
+      },
+      typescript: {
+        '5.9.3': ['^5.9'],
+      },
+    }
+
+    const newSource = prepareRemovals(
+      pnpmLockSource,
+      removals,
+      optimisedVersions,
+    )
+    const parsed = parseYAML(newSource) as any
+
+    // Check that 7.7.2 was removed
+    assert.equal(parsed.packages['semver@7.7.2'], undefined)
+    assert.notEqual(parsed.packages['semver@7.7.3'], undefined)
+
+    // Check that typescript 5.9.2 was removed
+    assert.equal(parsed.packages['typescript@5.9.2'], undefined)
+    assert.notEqual(parsed.packages['typescript@5.9.3'], undefined)
+
+    // Check snapshots
+    assert.equal(parsed.snapshots['semver@7.7.2'], undefined)
+    assert.notEqual(parsed.snapshots['semver@7.7.3'], undefined)
+    assert.equal(parsed.snapshots['typescript@5.9.2'], undefined)
+    assert.notEqual(parsed.snapshots['typescript@5.9.3'], undefined)
+
+    // Verify the original pointers were updated
+    assert.equal(parsed.importers['.'].dependencies.semver.version, '7.7.3')
+    assert.equal(
+      parsed.importers['packages/yarn'].dependencies.semver.version,
+      '7.7.3',
+    )
+    assert.equal(
+      parsed.importers['packages/yarn'].dependencies.typescript.version,
+      '5.9.3',
+    )
+  })
 })
