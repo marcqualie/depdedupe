@@ -1,7 +1,7 @@
 import type { CommandOptions } from '../types/command'
 
 export const checkCommand = async (options: CommandOptions) => {
-  const { parsed } = options
+  const { parsed, lockfileType } = options
 
   let dependenciesCount = 0
   let optimizedCount = 0
@@ -15,8 +15,10 @@ export const checkCommand = async (options: CommandOptions) => {
     console.log('No optimization possible')
     process.exit(0)
   } else {
+    const lockfileTypeName =
+      lockfileType === 'pnpm' ? 'pnpm-lock.yaml' : 'yarn.lock'
     console.log(
-      `Can be optimized from ${dependenciesCount} to ${optimizedCount} dependencies`,
+      `Can be optimized from ${dependenciesCount} to ${optimizedCount} dependencies (${lockfileTypeName})`,
     )
     // list all dependencies that can be optimized
     for (const [name, info] of Object.entries(parsed.dependencies)) {

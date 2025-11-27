@@ -20,7 +20,8 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "semver": "^7.7.3"
+    "semver": "^7.7.3",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
