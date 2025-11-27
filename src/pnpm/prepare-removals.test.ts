@@ -214,6 +214,10 @@ importers:
       semver:
         specifier: ^7.7.3
         version: 7.7.3
+    devDependencies:
+    '@types/node':
+        specifier: ^22.18
+        version: 22.18.6
 
   packages/yarn:
     dependencies:
@@ -225,6 +229,9 @@ importers:
         version: 5.9.2
 
 packages:
+  '@types/node@22.18.6':
+    resolution: {integrity: sha512-r8uszLPpeIWbNKtvWRt/DbVi5zbqZyj1PTmhRMqBMvDnaz1QpmSKujUtJLrqGZeoM8v72MfYggDceY4K1itzWQ==}
+
   semver@7.7.2:
     resolution: {integrity: sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==}
 
@@ -242,6 +249,8 @@ packages:
     hasBin: true
 
 snapshots:
+  '@types/node@22.18.6': {}
+
   semver@7.7.2: {}
 
   semver@7.7.3: {}
@@ -296,5 +305,48 @@ snapshots:
       parsed.importers['packages/yarn'].dependencies.typescript.version,
       '5.9.3',
     )
+
+    // Verify formatting of generated content
+    const expectedSource = `lockfileVersion: '9.0'
+
+importers:
+  .:
+    dependencies:
+      semver:
+        specifier: ^7.7.3
+        version: 7.7.3
+    devDependencies:
+    '@types/node':
+        specifier: ^22.18
+        version: 22.18.6
+
+  packages/yarn:
+    dependencies:
+      semver:
+        specifier: ^7.7.2
+        version: 7.7.3
+      typescript:
+        specifier: ^5.9
+        version: 5.9.3
+
+packages:
+  '@types/node@22.18.6':
+    resolution: {integrity: sha512-r8uszLPpeIWbNKtvWRt/DbVi5zbqZyj1PTmhRMqBMvDnaz1QpmSKujUtJLrqGZeoM8v72MfYggDceY4K1itzWQ==}
+
+  semver@7.7.3:
+    resolution: {integrity: sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==}
+
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+snapshots:
+  '@types/node@22.18.6': {}
+
+  semver@7.7.3: {}
+
+  typescript@5.9.3: {}`
+    assert.equal(newSource.trim(), expectedSource.trim())
   })
 })

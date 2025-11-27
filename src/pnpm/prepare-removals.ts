@@ -1,4 +1,4 @@
-import { parse as parseYAML, stringify as stringifyYAML } from 'yaml'
+import { parse as parseYAML } from 'yaml'
 
 interface PnpmDependencyEntry {
   specifier: string
@@ -25,53 +25,21 @@ interface PnpmLockfile {
  * 1. Removing entries from the packages section
  * 2. Removing entries from the snapshots section
  * 3. Updating importers to point to the optimised versions
+ *
+ * This implementation uses string manipulation to preserve exact formatting.
  */
 export const prepareRemovals = (
   source: string,
   removals: Record<string, string[]>,
   optimisedVersions?: Record<string, Record<string, string[]>>,
 ): string => {
+  // Parse YAML only to understand what needs to be changed
   const lockfile = parseYAML(source) as PnpmLockfile
 
-  if (!lockfile.packages) {
-    return source
-  }
+  let result = source
 
-  // Create a new packages object without the removed entries
-  const newPackages: Record<string, unknown> = {}
-  for (const [packageKey, packageValue] of Object.entries(lockfile.packages)) {
-    // Parse package key: "packageName@version" or "@scope/package@version"
-    const { name, version } = parsePackageKey(packageKey)
-
-    const shouldRemove =
-      name && version && removals[name]?.includes(version)
-
-    if (!shouldRemove) {
-      newPackages[packageKey] = packageValue
-    }
-  }
-
-  lockfile.packages = newPackages
-
-  // Also remove from snapshots if present
-  if (lockfile.snapshots) {
-    const newSnapshots: Record<string, unknown> = {}
-    for (const [snapshotKey, snapshotValue] of Object.entries(
-      lockfile.snapshots,
-    )) {
-      const { name, version } = parsePackageKey(snapshotKey)
-
-      const shouldRemove =
-        name && version && removals[name]?.includes(version)
-
-      if (!shouldRemove) {
-        newSnapshots[snapshotKey] = snapshotValue
-      }
-    }
-    lockfile.snapshots = newSnapshots
-  }
-
-  // Update importers to point to optimised versions
+  // Step 1: Build a map of version updates for importers
+  const versionUpdates: Record<string, string> = {}
   if (lockfile.importers && optimisedVersions) {
     for (const importer of Object.values(lockfile.importers)) {
       const depTypes = [
@@ -95,20 +63,17 @@ export const prepareRemovals = (
 
           // Check if this version is being removed
           if (removals[packageName]?.includes(extractedVersion)) {
-            // Find the optimised version for this specifier
             const optimised = optimisedVersions[packageName]
             if (optimised) {
               const newVersion = findOptimisedVersion(specifier, optimised)
-              if (newVersion) {
-                // Preserve peer dependency notation if present
-                if (currentVersion.includes('(')) {
-                  const peerPart = currentVersion.match(/(\(.+\))$/)?.[1]
-                  depEntry.version = peerPart
-                    ? `${newVersion}${peerPart}`
-                    : newVersion
-                } else {
-                  depEntry.version = newVersion
-                }
+              if (newVersion && newVersion !== extractedVersion) {
+                // Store the update: key is current version, value is new version
+                versionUpdates[currentVersion] = currentVersion.includes('(')
+                  ? currentVersion.replace(
+                      /^[^(]+/,
+                      newVersion,
+                    )
+                  : newVersion
               }
             }
           }
@@ -117,7 +82,32 @@ export const prepareRemovals = (
     }
   }
 
-  return stringifyYAML(lockfile)
+  // Step 2: Update version references in importers section
+  for (const [oldVersion, newVersion] of Object.entries(versionUpdates)) {
+    // Find and replace version lines in importers
+    // Match pattern: "        version: 7.7.2" -> "        version: 7.7.3"
+    const versionLineRegex = new RegExp(
+      `^(\\s+version: )${escapeRegex(oldVersion)}$`,
+      'gm',
+    )
+    result = result.replace(versionLineRegex, `$1${newVersion}`)
+  }
+
+  // Step 3: Remove package entries from packages and snapshots sections
+  for (const [packageName, versions] of Object.entries(removals)) {
+    for (const version of versions) {
+      // Build the package key (e.g., "semver@7.7.2" or "@types/node@22.18.6")
+      const packageKey = `${packageName}@${version}`
+
+      // Remove from packages section
+      result = removePackageBlock(result, packageKey)
+
+      // Remove from snapshots section
+      result = removePackageBlock(result, packageKey)
+    }
+  }
+
+  return result
 }
 
 /**
@@ -176,4 +166,37 @@ const findOptimisedVersion = (
     }
   }
   return null
+}
+
+/**
+ * Escape special regex characters in a string
+ */
+const escapeRegex = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Remove a package block from the pnpm-lock.yaml source
+ * A package block starts with "  packageKey:" and continues until the next package or end of section
+ *
+ * @param source The pnpm-lock.yaml source
+ * @param packageKey The package key to remove (e.g., "semver@7.7.2" or "@types/react@18.2.70")
+ * @returns The source with the package block removed
+ */
+const removePackageBlock = (source: string, packageKey: string): string => {
+  // Escape special characters in package key for regex (including @ and /)
+  const escapedKey = escapeRegex(packageKey)
+
+  // Match the package block:
+  // - Starts with "  packageKey:" (2 spaces + escaped key + colon)
+  // - Captures all following lines that start with 4+ spaces (package properties)
+  // - Captures ONE trailing blank line to avoid leaving double blank lines
+  // - Stops at the next line that starts with 2 spaces (next package) or 0-1 spaces (new section)
+
+  const blockRegex = new RegExp(
+    `^  '?${escapedKey}'?:.*\\n(?:    .*\\n)*\\n?`,
+    'gm',
+  )
+
+  return source.replace(blockRegex, '')
 }
